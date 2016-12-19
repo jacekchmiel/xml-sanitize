@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import xml_sanitize
 
 if __name__ == '__main__':

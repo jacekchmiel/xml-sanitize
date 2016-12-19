@@ -1,10 +1,12 @@
-#!/usr/bin/env python
 import argparse
 import codecs
+import glob
 import sys
 import re
 
 import pkg_resources
+
+import itertools
 
 _illegal_unichrs = [(0x00, 0x08), (0x0B, 0x0C), (0x0E, 0x1F),
                     (0x7F, 0x84), (0x86, 0x9F),
@@ -26,21 +28,20 @@ _illegal_xml_chars_RE = re.compile(u'[%s]' % u''.join(_illegal_ranges))
 
 def main():
     p = argparse.ArgumentParser(version=pkg_resources.require('xml_sanitize')[0].version)
-    p.add_argument('input_file', metavar='INPUT', type=str)
-    p.add_argument('-o', '--output_file', metavar='OUTPUT', type=str)
+    p.add_argument('input_files', metavar='INPUT', type=str, nargs='+',
+                   help='File to process. Glob expression may be used to select more files.')
     p.add_argument('-e', '--encoding', default='utf-8')
     args = p.parse_args()
     if args.encoding != 'utf-8':
         sys.exit('Encodings other than UTF-8 are not supported yet')
 
-    with codecs.open(args.input_file, 'r', args.encoding) as input_f:
-        txt = input_f.read()
-
-    sanitized = re.sub(_illegal_xml_chars_RE, '#invalid_xml_char', txt)
-    if not args.output_file:
-        print txt
-    else:
-        with codecs.open(args.output_file, 'w', args.encoding) as output_f:
+    input_files = list(itertools.chain.from_iterable([glob.glob(f) for f in args.input_files]))
+    for input_file_name in input_files:
+        print "Processing:", input_file_name
+        with codecs.open(input_file_name, 'r', args.encoding) as input_f:
+            txt = input_f.read()
+        sanitized = re.sub(_illegal_xml_chars_RE, '#invalid_xml_char', txt)
+        with codecs.open(input_file_name, 'w', args.encoding) as output_f:
             output_f.write(sanitized)
 
 
